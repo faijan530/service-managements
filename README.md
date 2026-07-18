@@ -1,3 +1,3 @@
 # Service Request Management System
 
-This is the Service Request Management System for JASIQ Labs.
+This is the Service Request Management System for JASIQ Labs, structured as a monorepo.
