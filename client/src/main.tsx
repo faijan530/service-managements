@@ -3,10 +3,13 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
+import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { UserDashboard } from './pages/UserDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminUserManagement } from './pages/AdminUserManagement';
+import { UserProfile } from './pages/UserProfile';
 import { CreateRequest } from './pages/CreateRequest';
 import { RequestDetail } from './pages/RequestDetail';
 import './index.css';
@@ -36,6 +39,7 @@ const App: React.FC = () => {
         <Navbar />
         <main className="flex-grow">
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             
@@ -65,8 +69,18 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               } 
             />
+
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              } 
+            />
             
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUserManagement />} />
             
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

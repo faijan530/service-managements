@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Wrench, Menu, X, LogOut, LayoutDashboard, PlusCircle, ShieldAlert } from 'lucide-react';
+import { Wrench, Menu, X, LogOut, LayoutDashboard, PlusCircle, ShieldAlert, User, Users } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -16,8 +16,8 @@ export const Navbar: React.FC = () => {
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="bg-brand-600 text-white p-2 rounded-lg">
                 <Wrench className="h-5 w-5" />
@@ -41,11 +41,22 @@ export const Navbar: React.FC = () => {
                   <span>New Request</span>
                 </Link>
 
+                <Link to="/profile" className="flex items-center space-x-1 text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+
                 {user.role === 'ADMIN' && (
-                  <Link to="/admin" className="flex items-center space-x-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md text-sm font-medium transition border border-red-200">
-                    <ShieldAlert className="h-4 w-4" />
-                    <span>Admin Panel</span>
-                  </Link>
+                  <>
+                    <Link to="/admin" className="flex items-center space-x-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md text-sm font-medium transition border border-red-200">
+                      <ShieldAlert className="h-4 w-4" />
+                      <span>Admin Panel</span>
+                    </Link>
+                    <Link to="/admin/users" className="flex items-center space-x-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md text-sm font-medium transition border border-red-200">
+                      <Users className="h-4 w-4" />
+                      <span>Users</span>
+                    </Link>
+                  </>
                 )}
 
                 <div className="h-6 w-px bg-slate-200 mx-2"></div>
@@ -94,10 +105,18 @@ export const Navbar: React.FC = () => {
               <Link to="/create-request" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">
                 New Request
               </Link>
+              <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">
+                Profile
+              </Link>
               {user.role === 'ADMIN' && (
-                <Link to="/admin" className="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
-                  Admin Panel
-                </Link>
+                <>
+                  <Link to="/admin" className="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
+                    Admin Panel
+                  </Link>
+                  <Link to="/admin/users" className="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
+                    User Management
+                  </Link>
+                </>
               )}
               <div className="border-t border-slate-200 my-2 pt-2 px-3">
                 <p className="text-sm font-medium text-slate-500">Logged in as {user.name}</p>

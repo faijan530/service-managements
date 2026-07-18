@@ -13,7 +13,7 @@ export interface StatusHistory {
     name: string;
     email: string;
   } | string;
-  comment?: string;
+  note?: string;
 }
 
 export interface ServiceRequest {
@@ -21,8 +21,11 @@ export interface ServiceRequest {
   requestNumber: string;
   title: string;
   description: string;
-  category: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  aiSummary?: string;
+  category: 'SOFTWARE' | 'HARDWARE' | 'NETWORK' | 'ACCESS' | 'OTHER';
+  aiSuggestedCategory?: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  aiSuggestedPriority?: string;
   status: 'OPEN' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
   createdBy: {
     _id: string;
