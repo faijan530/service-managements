@@ -1,0 +1,85 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Navbar } from './components/Navbar';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { UserDashboard } from './pages/UserDashboard';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { CreateRequest } from './pages/CreateRequest';
+import { RequestDetail } from './pages/RequestDetail';
+import './index.css';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div class="flex justify-center items-center h-screen bg-slate-50">
+        <div class="animate-spin h-8 w-8 text-brand-600 border-4 border-t-transparent border-brand-600 rounded-full"></div>
+      </div>
+    );
+  }
+  
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const App: React.FC = () => {
+  return (
+    <Router>
+      <div class="min-h-screen bg-slate-50 flex flex-col">
+        <Navbar />
+        <main class="flex-grow">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/create-request" 
+              element={
+                <ProtectedRoute>
+                  <CreateRequest />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/request/:id" 
+              element={
+                <ProtectedRoute>
+                  <RequestDetail />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route path="/admin" element={<AdminDashboard />} />
+            
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </React.StrictMode>
+);
