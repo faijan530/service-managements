@@ -32,97 +32,97 @@ export const RequestDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div class="flex justify-center items-center py-20">
-        <div class="animate-spin h-8 w-8 text-brand-600 border-4 border-t-transparent border-brand-600 rounded-full"></div>
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin h-8 w-8 text-brand-600 border-4 border-t-transparent border-brand-600 rounded-full"></div>
       </div>
     );
   }
 
   if (error || !request) {
     return (
-      <div class="max-w-3xl mx-auto px-4 py-8 text-center">
-        <div class="bg-red-50 border border-red-200 p-6 rounded-xl inline-block max-w-md">
-          <AlertTriangle class="h-10 w-10 text-red-500 mx-auto mb-4" />
-          <h2 class="text-lg font-bold text-red-800 mb-2">Failed to Load Request</h2>
-          <p class="text-xs text-red-600 font-mono break-all">{error || 'Request not found'}</p>
+      <div className="max-w-3xl mx-auto px-4 py-8 text-center">
+        <div className="bg-red-50 border border-red-200 p-6 rounded-xl inline-block max-w-md">
+          <AlertTriangle className="h-10 w-10 text-red-500 mx-auto mb-4" />
+          <h2 className="text-lg font-bold text-red-800 mb-2">Failed to Load Request</h2>
+          <p className="text-xs text-red-600 font-mono break-all">{error || 'Request not found'}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       <button
         onClick={() => navigate(-1)}
-        class="flex items-center space-x-1 text-slate-500 hover:text-brand-600 mb-6 transition"
+        className="flex items-center space-x-1 text-slate-500 hover:text-brand-600 mb-6 transition"
       >
-        <ArrowLeft class="h-4 w-4" />
-        <span class="text-sm font-medium">Back to list</span>
+        <ArrowLeft className="h-4 w-4" />
+        <span className="text-sm font-medium">Back to list</span>
       </button>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="lg:col-span-2 space-y-6">
-          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-              <span class="text-xs font-semibold text-brand-600 tracking-wider uppercase bg-brand-50 px-2.5 py-1 rounded-md">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-xs font-semibold text-brand-600 tracking-wider uppercase bg-brand-50 px-2.5 py-1 rounded-md">
                 {request.requestNumber}
               </span>
-              <span class="text-xs text-slate-400">
+              <span className="text-xs text-slate-400">
                 Created: {new Date(request.createdAt).toLocaleString()}
               </span>
             </div>
 
-            <h1 class="text-2xl font-bold text-slate-900 mb-4">{request.title}</h1>
-            <p class="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed mb-6">
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">{request.title}</h1>
+            <p className="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed mb-6">
               {request.description}
             </p>
 
-            <div class="border-t border-slate-100 pt-4 grid grid-cols-3 gap-4 text-xs">
+            <div className="border-t border-slate-100 pt-4 grid grid-cols-3 gap-4 text-xs">
               <div>
-                <span class="text-slate-400 block mb-1">Category</span>
-                <span class="font-semibold text-slate-800">{request.category}</span>
+                <span className="text-slate-400 block mb-1">Category</span>
+                <span className="font-semibold text-slate-800">{request.category}</span>
               </div>
               <div>
-                <span class="text-slate-400 block mb-1">Priority</span>
-                <span class="font-semibold text-slate-800">{request.priority}</span>
+                <span className="text-slate-400 block mb-1">Priority</span>
+                <span className="font-semibold text-slate-800">{request.priority}</span>
               </div>
               <div>
-                <span class="text-slate-400 block mb-1">Status</span>
-                <span class="font-semibold text-slate-800">{request.status}</span>
+                <span className="text-slate-400 block mb-1">Status</span>
+                <span className="font-semibold text-slate-800">{request.status}</span>
               </div>
             </div>
           </div>
 
-          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 class="font-bold text-slate-900 mb-4 flex items-center space-x-2">
-              <Clock class="h-5 w-5 text-slate-500" />
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4 flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-slate-500" />
               <span>Status History Timeline</span>
             </h3>
             
             <div class="flow-root">
-              <ul class="-mb-8">
+              <ul className="-mb-8">
                 {request.statusHistory && request.statusHistory.map((history, idx) => (
                   <li key={idx}>
-                    <div class="relative pb-8">
+                    <div className="relative pb-8">
                       {idx !== request.statusHistory.length - 1 ? (
-                        <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200" aria-hidden="true" />
+                        <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200" aria-hidden="true" />
                       ) : null}
-                      <div class="relative flex space-x-3">
+                      <div className="relative flex space-x-3">
                         <div>
-                          <span class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center ring-8 ring-white">
-                            <Clock class="h-4 w-4 text-slate-500" />
+                          <span className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center ring-8 ring-white">
+                            <Clock className="h-4 w-4 text-slate-500" />
                           </span>
                         </div>
-                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                        <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                           <div>
-                            <p class="text-sm text-slate-800">
-                              Status changed to <span class="font-semibold text-brand-600">{history.status}</span>
+                            <p className="text-sm text-slate-800">
+                              Status changed to <span className="font-semibold text-brand-600">{history.status}</span>
                             </p>
                             {history.comment && (
-                              <p class="text-xs text-slate-500 italic mt-0.5">"{history.comment}"</p>
+                              <p className="text-xs text-slate-500 italic mt-0.5">"{history.comment}"</p>
                             )}
                           </div>
-                          <div class="text-right text-xs whitespace-nowrap text-slate-400">
+                          <div className="text-right text-xs whitespace-nowrap text-slate-400">
                             {new Date(history.changedAt).toLocaleDateString()}
                           </div>
                         </div>
@@ -135,24 +135,24 @@ export const RequestDetail: React.FC = () => {
           </div>
         </div>
 
-        <div class="space-y-6">
-          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 class="font-bold text-slate-900 mb-4 flex items-center space-x-2">
-              <User class="h-5 w-5 text-slate-500" />
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4 flex items-center space-x-2">
+              <User className="h-5 w-5 text-slate-500" />
               <span>Stakeholders</span>
             </h3>
             
-            <div class="space-y-4 text-sm">
-              <div class="p-3 bg-slate-50 rounded-xl">
-                <span class="text-xs text-slate-400 block mb-0.5">Raised By</span>
-                <span class="font-semibold text-slate-800">{request.createdBy?.name || 'Unknown'}</span>
-                <span class="text-xs text-slate-500 block">{request.createdBy?.email || 'N/A'}</span>
+            <div className="space-y-4 text-sm">
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-xs text-slate-400 block mb-0.5">Raised By</span>
+                <span className="font-semibold text-slate-800">{request.createdBy?.name || 'Unknown'}</span>
+                <span className="text-xs text-slate-500 block">{request.createdBy?.email || 'N/A'}</span>
               </div>
 
-              <div class="p-3 bg-slate-50 rounded-xl">
-                <span class="text-xs text-slate-400 block mb-0.5">Assigned Agent</span>
-                <span class="font-semibold text-slate-800">{request.assignedTo?.name || 'Unassigned'}</span>
-                <span class="text-xs text-slate-500 block">{request.assignedTo?.email || ''}</span>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-xs text-slate-400 block mb-0.5">Assigned Agent</span>
+                <span className="font-semibold text-slate-800">{request.assignedTo?.name || 'Unassigned'}</span>
+                <span className="text-xs text-slate-500 block">{request.assignedTo?.email || ''}</span>
               </div>
             </div>
           </div>
