@@ -1,62 +1,51 @@
-# Evaluator Notes - Service Request Management System
+# Evaluator Documentation - Internship Readiness Audit
 
-This document is for the JASIQ Labs evaluation team. It contains details of the intentionally introduced gaps, missing modules, defective implementations, and instructions on how to evaluate the candidate's submission.
-
----
-
-## 1. Intentionally Incomplete Features & Missing Modules
-
-### Missing Modules
-1. **User Profile (`/auth/me` / User Profile Module)**:
-   - **Backend**: The endpoint `/api/auth/me` is completely missing.
-   - **Impact**: When the frontend reloads, it attempts to verify the session by fetching `/api/auth/me`. Since the endpoint is missing, the session is reset and they are logged out. The candidate must build `/auth/me` to fetch the user profile.
-2. **Admin User Listing (`/users/admins` or similar)**:
-   - **Backend**: No endpoint exists to get active admin accounts.
-   - **Impact**: The assignee dropdown in `AdminDashboard.tsx` uses mock options. The candidate must build a route/controller to query active admin accounts and populate this dynamically.
-3. **Dashboard Stats / Metrics Module**:
-   - **Backend**: No stats endpoint exists to calculate totals for tickets.
-   - **Impact**: The stats cards in `AdminDashboard.tsx` are hardcoded. The candidate must build stats calculation dynamically.
+This document is for the assessment evaluator to understand the design, architecture, and intentional defects built into the **AI-Assisted Service Request Management System**.
 
 ---
 
-## 2. Known Defects Inserted
+## 1. Architecture Overview
 
-### Authentication & Authorization
-1. **Plaintext Password Saving**:
-   - **File**: `server/src/controllers/authController.ts`
-   - **Description**: The `/register` endpoint saves the password directly in plaintext without hashing, while `/login` uses `bcrypt.compare`.
-   - **Impact**: Registered accounts fail to log in.
-2. **Privilege Escalation in Registration**:
-   - **File**: `server/src/controllers/authController.ts` & `client/src/pages/Register.tsx`
-   - **Description**: Frontend has a role selector, and backend saves it without check.
-3. **Broken Object Level Authorization (BOLA/IDOR)**:
-   - **File**: `server/src/controllers/requestController.ts`
-   - **Description**: Regular users can see everyone's requests and details, and cancel any request.
-4. **Missing Route Protection**:
-   - **File**: `server/src/routes/requestRoutes.ts` & `client/src/main.tsx`
-   - **Description**: Details view is unprotected on backend, and `/admin` is unprotected on frontend.
-
-### UI & UX Glitches
-1. **Broken Mobile Navigation**:
-   - **File**: `client/src/components/Navbar.tsx`
-   - **Description**: Hamburger button click does not toggle menu.
-2. **State Synchronization Bug**:
-   - **File**: `client/src/pages/UserDashboard.tsx`
-   - **Description**: Cancelling a request does not update UI state until manual page refresh.
-3. **HTTP Method Mismatch**:
-   - **File**: `client/src/pages/AdminDashboard.tsx`
-   - **Description**: Frontend calls PUT instead of PATCH for status update.
+The system is configured as a Monorepo workspace containing:
+- **Client**: Single Page React app structured via Vite, TypeScript, and Tailwind CSS.
+- **Server**: Node.js + Express + TypeScript service using MongoDB (Mongoose) for object storage.
+- **AI Analyzer**: Mocked deterministic AI text-analyzer returning ticket categorization and suggested priority details.
 
 ---
 
-## 3. Verification of the Two Working Scenarios
+## 2. Intentionally Introduced Defects
 
-### Working Scenario 1: User Login
-1. Seed database: `npm run seed` inside `server/`.
-2. Start backend: `npm run dev` in `server/`.
-3. Start client: `npm run dev` in `client/`.
-4. Login using `user@example.com` / `User@123`.
+| Issue ID | Area | Severity | Symptom | Expected Candidate Discovery & Fix |
+|---|---|---|---|---|
+| **AUTH-01** | Auth | High | Plaintext Password Storage | Registration inserts raw password into `passwordHash`. Candidates must integrate `bcryptjs` hashing. |
+| **AUTH-02** | Auth | High | Token Key Mismatch | Login endpoint returns key `accessToken` but frontend parses `token`. Candidates must align response keys. |
+| **AUTH-03** | Auth | High | Session Lost on Refresh | `AuthContext` useEffect reads from `token` but `login()` saves to `user_session_token`. Candidates must align key names. |
+| **SEC-01** | Security | Critical | Registration Privilege Escalation | Dropdown on Register page permits setting role to `ADMIN`. Candidates must delete the dropdown and force `USER` role. |
+| **SEC-02** | Security | Critical | Broken Object Level Auth (IDOR) | `/requests` routes lack ownership filtering, allowing users to view and edit tickets belonging to others. Candidates must check request ownership. |
+| **AI-01** | AI | Medium | AI Endpoint 404 | Frontend requests `/ai/analyze` but backend registers `/ai/analyze-request`. Candidates must match endpoint names. |
+| **AI-02** | AI | Medium | AI Response Key Mismatch | Frontend reads `aiSummary` but backend returns `summary`. Candidates must match response properties. |
+| **AI-03** | AI | High | Database Enum validation crash | AI suggests priority `"CRITICAL"` for general inquiries. Submitting this crashes database validation. Candidates must return valid priorities. |
+| **CORS-01** | CORS | High | CORS Request Blocked | Origin contains trailing slash (`http://localhost:3000/`) and methods omit `PUT`/`PATCH`. Candidates must clean CORS headers and options. |
+| **UX-01** | UX | Low | stuck Loading state | AI analyzer and profile update buttons remain permanently in loading state if the request fails. Candidates must add proper error catch handlers resetting states. |
+| **SEED-01** | Seed | Low | Seed Script Fails | Seed script requires `DB_SEED_MODE=active` to run. Candidates must add this env variable. |
 
-### Working Scenario 2: Create a Basic Service Request
-1. Log in, click "New Request".
-2. Enter Title and Description and submit.
+---
+
+## 3. Technical Defence Questions
+
+During the candidate presentation, ask:
+1. **Explain the CORS preflight issue**: "Why did the status update fail on the browser even though the backend console registered no errors?"
+   * *Expected Answer*: The browser blocked the preflight OPTIONS request because the backend CORS middleware didn't authorize `PUT`/`PATCH` methods and was missing the `Authorization` allowed header.
+2. **Explain the database validation crash**: "What caused the backend to crash when submitting a generic ticket after getting AI suggestions?"
+   * *Expected Answer*: The AI engine returned `"CRITICAL"` for priority, which is not defined in the `ServiceRequest` Mongoose schema priorities enum, triggering a validation failure.
+3. **What is BOLA / IDOR and how did you resolve it?**: "Why was it possible for standard users to see or cancel other employees' tickets?"
+   * *Expected Answer*: The query in `/requests` was fetching all documents instead of filtering by the logged-in user's ID (`req.user.id`).
+
+---
+
+## 4. Scoring Guidelines
+
+- **Minimal (0-30%)**: App builds but fails to run. Seed script is not configured, or environment CORS blocks requests.
+- **Functional (31-60%)**: Login, registration, and basic ticket creation work. AI panel displays returned details but BOLA remains unfixed.
+- **Advanced (61-90%)**: Gaps resolved. Session remains active on refresh. Data is isolated correctly.
+- **Outstanding (91-100%)**: Code includes regression tests covering BOLA and invalid priorities, clean error handling, and robust input validation.

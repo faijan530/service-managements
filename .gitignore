@@ -38,3 +38,6 @@ coverage/
 # Misc
 .cache/
 .eslintcache
+
+# Evaluator Private Report
+evaluator-private-report.md

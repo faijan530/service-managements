@@ -8,6 +8,11 @@ dotenv.config();
 
 const seedData = async () => {
   try {
+    if (process.env.DB_SEED_MODE !== 'active') {
+      console.error('Error: Seeding is locked. Set DB_SEED_MODE=active in server/.env to run.');
+      process.exit(1);
+    }
+
     const mongoURI = process.env.MONGODB_URI;
     if (!mongoURI) {
       console.error('Error: MONGODB_URI is not defined.');
@@ -47,7 +52,7 @@ const seedData = async () => {
     const request1 = await ServiceRequest.create({
       title: 'VPN Connection Failure',
       description: 'Unable to connect to the corporate VPN from home network since this morning. Getting code 809.',
-      category: 'Network',
+      category: 'NETWORK',
       priority: 'HIGH',
       status: 'OPEN',
       createdBy: regularUser._id,
@@ -55,7 +60,7 @@ const seedData = async () => {
         {
           status: 'OPEN',
           changedBy: regularUser._id,
-          comment: 'Initial submission',
+          note: 'Initial submission',
         },
       ],
     });
@@ -63,7 +68,7 @@ const seedData = async () => {
     const request2 = await ServiceRequest.create({
       title: 'MS Office Activation Required',
       description: 'MS Word and Excel show "Product Unlicensed" popup and cannot edit files.',
-      category: 'Software',
+      category: 'SOFTWARE',
       priority: 'MEDIUM',
       status: 'IN_PROGRESS',
       createdBy: regularUser._id,
@@ -72,12 +77,12 @@ const seedData = async () => {
         {
           status: 'OPEN',
           changedBy: regularUser._id,
-          comment: 'Initial submission',
+          note: 'Initial submission',
         },
         {
           status: 'IN_PROGRESS',
           changedBy: adminUser._id,
-          comment: 'Assigned to admin for license keys replacement',
+          note: 'Assigned to admin for license keys replacement',
         },
       ],
     });
@@ -85,7 +90,7 @@ const seedData = async () => {
     const request3 = await ServiceRequest.create({
       title: 'Laptop Battery Replacement',
       description: 'Laptop battery runs out in less than 30 minutes. Needs a replacement battery.',
-      category: 'Hardware',
+      category: 'HARDWARE',
       priority: 'LOW',
       status: 'RESOLVED',
       createdBy: regularUser._id,
@@ -94,12 +99,12 @@ const seedData = async () => {
         {
           status: 'OPEN',
           changedBy: regularUser._id,
-          comment: 'Initial submission',
+          note: 'Initial submission',
         },
         {
           status: 'RESOLVED',
           changedBy: adminUser._id,
-          comment: 'Battery replaced and verified.',
+          note: 'Battery replaced and verified.',
         },
       ],
     });
