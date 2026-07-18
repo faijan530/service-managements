@@ -1,187 +1,260 @@
-# JASIQ Labs Internship Readiness Audit
-## Service Request Management System
+# JASIQ Labs - Internship Readiness Audit
+## AI-Assisted Service Request Management System (SRMS)
 
-Welcome to the JASIQ Labs Internship Readiness Audit. You are tasked with assessing, fixing, and extending a partially developed Service Request Management System (SRMS). 
-
-This application is designed to allow organization users to raise support/service requests (e.g., VPN issues, hardware replacements) and administrators to review, assign, and update those requests.
+Welcome to the JASIQ Labs Internship Readiness Audit. You are tasked with auditing, debugging, fixing, and extending a partially implemented AI-Assisted Service Request Management System (SRMS).
 
 ---
 
-## About the Assessment
+## 1. Project Introduction
 
-This repository contains a deliberately incomplete and partially defective codebase (approximately 30% functional). The core infrastructure is established, but there are multiple technical, security, functional, and user experience gaps left for you to resolve.
+In any modern enterprise, managing internal employee request logs (such as software license renewals, corporate VPN access requests, hardware failures, or access changes) is critical. The **AI-Assisted Service Request Management System (SRMS)** provides:
+- A public interface for users to register and sign in.
+- An employee dashboard to create, view, search, and cancel service tickets.
+- An AI-assisted text analyzer that automatically summarizes issues, recommends categories, and suggests priority levels before submission.
+- An administrative portal for support agents to triage tickets, update statuses, assign agents, and track ticket metrics.
 
-Your responsibility is to:
-1. **Explore & Analyze**: Understand the project structure, inspect the client and server code, and identify bugs, security vulnerabilities, and missing features.
-2. **Implement**: Address the issues, secure the endpoints, complete the unfinished flows, and ensure the system behaves reliably.
-3. **Test**: Write meaningful automated tests and document your manual test scenarios.
-4. **Deploy**: Deploy both the client and server applications to hosting platforms.
-5. **Document & Present**: Complete the submission template at the bottom of this README, document your findings, and prepare to defend your engineering decisions in a live demo.
-
-> [!IMPORTANT]
-> **AI tools, documentation, and online resources are allowed and encouraged.** However, you must fully understand every line of code you submit, be able to explain how your fixes work, and defend your architectural choices during your presentation.
+This repository contains a deliberately incomplete and partially defective codebase (approximately 30% functional). The foundational monorepo scaffolding is set up, but the implementation has extensive security gaps, configuration issues, data-integrity issues, and incomplete integration flows.
 
 ---
 
-## Existing Working Functionality
+## 2. Assessment Objective
 
-The following scenarios are verified to work out-of-the-box:
-1. **User Login**: A seeded user can open the login screen, enter their credentials, receive a JSON Web Token (JWT), and access the dashboard.
-2. **Request Creation**: A logged-in user can navigate to the "New Request" page, fill in the title and description, and submit. The record is successfully saved in MongoDB.
+As a candidate, you are evaluated on your ability to:
+1. Understand and trace a multi-layer codebase (React, Express, MongoDB).
+2. Discover hidden functional, security, validation, and performance defects.
+3. Secure APIs against common threats (Privilege Escalation, IDOR/BOLA, CORS issues).
+4. Integrate and safeguard AI-assisted API wrappers.
+5. Create automated test suites validating your fixes.
+6. Deploy the application into a production cloud environment.
+7. Present your architectural changes and defend your choices.
 
-*Note: All other workflows and pages have intentional defects, missing route protections, and incomplete backend integrations.*
-
----
-
-## Candidate Responsibilities
-
-You must inspect and improve the following areas in the codebase:
-- **Authentication & Authorization**: Address token security, implement session restore on page refresh, secure role-based access, and prevent unauthorized actions (e.g., privilege escalation during registration).
-- **Security & Data Isolation**: Verify data ownership. Standard users should never see or access requests created by other users (Broken Object Level Authorization / IDOR).
-- **Request Management**: Complete the request cancellation flow, log status history updates in the database, and link the assignee selection to actual database records.
-- **Admin Workflows**: Calculate dashboard metrics dynamically from the database and fix the status change interaction.
-- **Input Validation**: Implement consistent frontend and backend validation for required field lengths, formats, and allowed values. Implement duplicate submission prevention.
-- **Error Handling**: Replace raw database errors and generic 500 crashes with descriptive, user-friendly error messages and clean HTTP status codes.
-- **Responsive UI**: Fix the mobile navigation menu and table layouts for small screens.
-- **Testing**: Configure and write automated unit/integration tests to cover core flows.
-- **Deployment**: Prepare the monorepo for production deployment. Resolve hardcoded connection strings and secure CORS configuration.
+> [!NOTE]
+> AI coding assistants, official documentation, and online resources are fully permitted. You must understand and be ready to defend all changes you make in your branch.
 
 ---
 
-## Local Setup
+## 3. Expected Application Features
 
-Follow these steps to run the application on your local machine:
+### Authentication & Authorization
+- **Registration**: Register standard accounts. Secure role assignments.
+- **Login & Persistence**: Secure logins, issue JWTs, and preserve sessions on page refresh.
+- **Route Guarding**: Restrict dashboard pages and admin panels appropriately.
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/jasiq-labs-admin/service-request-management-system.git
-cd service-request-management-system
-```
+### User Workflows
+- **Request Creation**: File new support requests.
+- **AI Analyzer**: Query an AI service to summarize titles and suggest category/priority levels. Let users review suggestions before saving.
+- **My Requests**: List, search, filter, and view details of own requests.
+- **Cancellation**: Cancel eligible tickets (non-resolved, non-cancelled).
 
-### 2. Install Dependencies
-This project uses npm workspaces. Run the following command in the root directory to install dependencies for both the frontend and backend:
+### Admin Workflows
+- **Triage**: List all organization tickets. Search, filter, and paginate through results.
+- **Assignment**: Assign tickets to registered support staff. Keep histories of changes.
+- **Status Updates**: Update ticket statuses via valid state transitions (OPEN -> IN_REVIEW -> IN_PROGRESS -> RESOLVED).
+- **Dashboard Metrics**: Display live metrics showing active, resolved, open, and high-priority ticket counts.
+
+### Technical Controls
+- **CORS Policies**: Configure robust cross-origin rules for frontend-backend communication.
+- **Validation**: Enforce length, trimming, format, and type validation on both frontend and backend.
+- **Error Handling**: Replace stack traces and raw DB logs with clean API responses.
+- **Responsive Layout**: Support mobile screen resolutions.
+
+---
+
+## 4. Expected Use Cases
+
+### UC-01: User Registration
+- **Actor**: Guest
+- **Preconditions**: Email is not already registered.
+- **Primary Flow**: Guest enters name, email, and password. Submits and receives a success response.
+- **Failure Scenarios**: Empty name/email, weak password, or duplicate email registration.
+
+### UC-02: User Login
+- **Actor**: Guest / Registered User
+- **Preconditions**: Account exists and is active.
+- **Primary Flow**: User enters credentials. Receives JWT, redirects to User Dashboard.
+- **Failure Scenarios**: Wrong password, non-existent email, or logging into a deactivated account.
+
+### UC-03: Admin Login
+- **Actor**: Guest / Admin User
+- **Preconditions**: Admin account exists.
+- **Primary Flow**: Admin enters credentials. Receives JWT, redirects to Admin Panel.
+- **Failure Scenarios**: Logging in with invalid admin details.
+
+### UC-04: Create Service Request
+- **Actor**: Authenticated User
+- **Preconditions**: User is logged in.
+- **Primary Flow**: User fills in title, description, category, and priority. Submits ticket.
+- **Failure Scenarios**: Blank fields, missing title, or duplicate submissions on rapid clicks.
+
+### UC-05: Generate AI Request Analysis
+- **Actor**: Authenticated User
+- **Preconditions**: Title and description are filled.
+- **Primary Flow**: User clicks "Analyze Content". The system calls the AI route and displays a suggested summary, category, priority, and rationale.
+- **Failure Scenarios**: Network offline, empty input, or AI provider failure.
+
+### UC-06: View Own Requests
+- **Actor**: Authenticated User
+- **Preconditions**: User is logged in.
+- **Primary Flow**: User opens dashboard and sees only tickets raised by their own account.
+- **Failure Scenarios**: Data leak (BOLA/IDOR) showing other users' tickets.
+
+### UC-07: View Request Details
+- **Actor**: Authenticated User / Admin
+- **Preconditions**: Request exists and user owns it (or is admin).
+- **Primary Flow**: User clicks "View" and sees request info and timeline.
+- **Failure Scenarios**: Accessing an invalid request ID or a ticket owned by another user.
+
+### UC-08: Cancel Eligible Request
+- **Actor**: Authenticated User
+- **Preconditions**: Ticket status is OPEN or IN_REVIEW.
+- **Primary Flow**: User clicks "Cancel". Status updates to CANCELLED.
+- **Failure Scenarios**: Cancelling a RESOLVED ticket, or cancelling another user's ticket.
+
+### UC-10: Admin Filters and Searches Requests
+- **Actor**: Authenticated Admin
+- **Preconditions**: In Admin Panel.
+- **Primary Flow**: Admin enters search terms or selects category filters to query tickets.
+
+### UC-11: Admin Assigns Request
+- **Actor**: Authenticated Admin
+- **Preconditions**: Selected ticket exists.
+- **Primary Flow**: Admin selects support agent from dropdown and clicks assign.
+
+### UC-12: Admin Updates Request Status
+- **Actor**: Authenticated Admin
+- **Preconditions**: Valid transition path (e.g. IN_PROGRESS -> RESOLVED).
+- **Primary Flow**: Admin selects new status. Changes are saved.
+
+### UC-13: Admin Updates Priority
+- **Actor**: Authenticated Admin
+- **Preconditions**: Selected ticket exists.
+- **Primary Flow**: Admin updates ticket priority (LOW, MEDIUM, HIGH, URGENT).
+
+### UC-14: View Status History
+- **Actor**: User / Admin
+- **Preconditions**: Ticket detail page is loaded.
+- **Primary Flow**: System renders timeline showing who changed the status, when, and any note.
+
+### UC-15: Admin Dashboard Metrics
+- **Actor**: Authenticated Admin
+- **Preconditions**: Accessing Admin Control Panel.
+- **Primary Flow**: Dashboard cards display accurate calculations of all tickets in MongoDB.
+
+### UC-16: Unauthorized Access Prevention
+- **Actor**: Guest / Unauthenticated User
+- **Preconditions**: Guest attempts to load private dashboards or request detail URLs.
+- **Primary Flow**: System blocks request and redirects back to `/login`.
+
+### UC-17: Logout and Session Expiry
+- **Actor**: Authenticated User
+- **Preconditions**: Active session exists.
+- **Primary Flow**: User clicks logout. Local storage is cleared and user is redirected.
+
+---
+
+## 5. Expected Business Rules
+
+1. **Isolation**: Standard users may only query and modify requests raised by their own user ID.
+2. **Admin-Only**: Route guards must check both token validity and the `ADMIN` role.
+3. **Unique Keys**: Ticket reference numbers (e.g. `SR-yymmdd-xxxx`) must be unique.
+4. **Transition Rules**: Resolved or Cancelled tickets cannot be re-opened or changed.
+5. **Advisory AI**: AI-generated priority suggestions are advisory and must not bypass backend validation.
+
+---
+
+## 6. Local Setup
+
+### 1. Install Dependencies
+Run from the monorepo root:
 ```bash
 npm install
 ```
 
-### 3. Environment Configuration
-Set up your local environment files:
-- **Backend**: Copy `server/.env.example` to `server/.env` and configure your local MongoDB connection string (e.g. `mongodb://localhost:27017/service-request-db`). Add any other configuration variables needed.
-- **Frontend**: Copy `client/.env.example` to `client/.env`.
+### 2. Configure Environment Files
+- Copy `server/.env.example` to `server/.env`
+- Copy `client/.env.example` to `client/.env`
 
-### 4. Database Seeding
-Initialize the database with default test users and mock service requests:
+### 3. Run Database Seeding
+Ensure your local MongoDB instance is running, and execute:
 ```bash
 npm run seed
 ```
+*Note: You may need to review the seed script or environment configuration if seeding is blocked.*
 
-### 5. Run the Application
-Start the frontend client and backend server concurrently in development mode:
+### 4. Run Locally
+Start the server and client concurrently in development mode:
 ```bash
 npm run dev
 ```
-- Client will start at: `http://localhost:3000`
-- Server will start at: `http://localhost:5000`
 
-### 6. Production Build
-Ensure that both client and server compile and build without compilation errors:
+### 5. Production Build
+Verify that both client and server build without errors:
 ```bash
 npm run build
 ```
 
 ---
 
-## Environment Variables
+## 7. Environment Variables
 
 ### Backend (`server/.env`)
-- `PORT` - The port on which the Express server runs (default: 5000)
-- `MONGODB_URI` - MongoDB connection string (e.g. `mongodb://localhost:27017/service-request-db`)
-- *(Identify and document any other production env variables you introduce)*
+```env
+PORT=5000
+MONGODB_URI=mongodb://127.0.0.1:27017/service-request-db
+JWT_SECRET=replace_with_a_secure_local_secret
+JWT_EXPIRES_IN=1d
+CLIENT_ORIGIN=http://localhost:3000
+AI_PROVIDER=mock
+AI_SERVICE_TOKEN=mock_secret
+DB_SEED_MODE=active
+```
 
 ### Frontend (`client/.env`)
-- `VITE_API_URL` - Backend server URL accessed by the client.
-
----
-
-## Test Credentials
-
-Use these seeded accounts to log in and test the system:
-
-| Role | Email | Password |
-|---|---|---|
-| **User** | `user@example.com` | `User@123` |
-| **Admin** | `admin@example.com` | `Admin@123` |
-
-*You may create additional test users as part of your verification plan.*
-
----
-
-## Assessment Duration
-
-You have **5 calendar days** from the date of assignment to complete the audit, push your changes, deploy the application, and fill in the submission details.
-
----
-
-## Git Submission Workflow
-
-### Step 1: Create a Feature Branch
-Do not commit directly to the default `master` branch. Branch off `master` to work on your features:
-```bash
-git checkout master
-git pull origin master
-git checkout -b assessment/<your-name>
-```
-*Example: `git checkout -b assessment/rahul-sharma`*
-
-### Step 2: Push Your Branch
-Make small, atomic commits as you progress. Push your branch to the remote repository:
-```bash
-git push -u origin assessment/<your-name>
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
 ```
 
-### Step 3: Share the Branch URL
-Submit the direct link to your assessment branch. **Do not merge your branch into master.**
+---
+
+## 8. Candidate Development Workflow
+
+1. Create a feature branch from the latest `master`:
+   ```bash
+   git checkout master
+   git pull origin master
+   git checkout -b assessment/<your-name>
+   ```
+2. Make atomic commits describing your fixes (e.g. `git commit -m "fix: enforce CORS credentials and allowed methods"`).
+3. Push your progress branch:
+   ```bash
+   git push -u origin assessment/<your-name>
+   ```
 
 ---
 
-## Required Tested Use Cases
+## 9. Required Test Coverage
 
-Your submission must document test results for at least the following test categories:
+Your verification suite should cover:
+- **Authentication**: Weak password rejections, logins, and session restores on refresh.
+- **Authorization**: Standard users reading/updating other user tickets (BOLA/IDOR tests), and guest access blocks.
+- **Request Operations**: Valid creation, duplicate submission blocks, enums validation (LOW/MEDIUM/HIGH/URGENT), and cancellations.
+- **Admin**: Accurate metrics counts, assignee allocations, and status history logs.
+- **AI Integration**: Endpoint availability, invalid suggested priority handling, error states, and offline fallbacks.
+- **CORS & UI**: Preflight OPTIONS checking, responsive menu controls, and Toast notifications.
 
-### 1. Authentication & Session
-- Valid user and admin logins.
-- Invalid login attempts (e.g. incorrect passwords, non-existent emails).
-- Accessing protected pages (e.g., User/Admin Dashboards) without a token.
-- Role-based route enforcement (preventing standard users from loading admin views).
-- Re-loading pages (verifying session persists on refresh).
+---
 
-### 2. Service Requests
-- Valid request creation and confirmation.
-- Validation of missing required fields (e.g. blank titles).
-- Duplicate request prevention (e.g., blocking multiple quick submissions).
-- Isolating records (verifying User A cannot retrieve or update User B's tickets).
-- Successful ticket cancellation and status update flows.
+## 10. Test Case Documentation Format
 
-### 3. Error Handling
-- Handling of invalid request IDs (e.g. passing random strings to detail page routes).
-- Client behavior when backend service is offline.
-- Standardized API error formats (avoiding raw server crash logs).
+Record your test executions in the following format:
 
-### 4. UI & Responsiveness
-- Form submission loading state indicators.
-- Empty states (displays helpful message when no tickets exist).
-- Navigating the system on mobile screen sizes.
-
-### 5. Deployment
-- Reaching both frontend and backend URLs in a live production environment.
-- Persistent state (verifying database operations remain intact after deployment).
-- Proper page refresh behavior on nested client-side React routes.
+| Test ID | Use Case | Preconditions | Test Steps | Expected Result | Actual Result | Status |
+|---|---|---|---|---|---|---|
+| TC-001 | Valid Login | Seeded user exists | Enter email & password, click sign in | Session token is saved, user redirected | | Pass/Fail |
 
 ---
 
 # Internship Readiness Audit Submission
-
-*Candidates: Please fill in the details below before submitting your branch.*
 
 ## Candidate Details
 
@@ -192,58 +265,78 @@ Your submission must document test results for at least the following test categ
 - Technology Track:
 - GitHub Profile:
 
-## Repository Submission
+## Repository
 
 - Feature Branch:
 - Branch URL:
 - Latest Commit:
-- Pull Request URL, if created:
+- Pull Request URL:
 
 ## Deployment
 
 - Frontend URL:
 - Backend URL:
-- Test User Credentials:
-- Test Admin Credentials:
+- User Credentials:
+- Admin Credentials:
 
-## Gap Analysis
+## Initial Gap Analysis
 
-List the important functional, technical, security, UI and deployment gaps identified before development:
+### Functional Gaps
 1.
 2.
-3.
+
+### Technical Gaps
+1.
+2.
+
+### Security and Authorization Gaps
+1.
+2.
+
+### UI/UX Gaps
+1.
+2.
+
+### Testing and Deployment Gaps
+1.
+2.
 
 ## Changes Completed
 
-Describe the fixes and enhancements you implemented:
 1.
 2.
 3.
 
-## Use Cases Tested
+## Use Cases Completed
 
-| ID | Use Case | Expected Result | Actual Result | Status |
+| Use Case ID | Use Case | Completion Status | Notes |
+|---|---|---|---|
+| UC-01 | User Registration | Complete/Partial/Not Complete | |
+
+## Test Execution
+
+| Test ID | Use Case | Expected Result | Actual Result | Status |
 |---|---|---|---|---|
-| TC-01 | | | | Pass/Fail |
+| TC-001 | | | | Pass/Fail |
 
 ## Known Limitations
 
-List any remaining issues, unhandled edge cases, or potential design limitations:
 1.
 2.
-3.
 
 ## AI and External Tools Used
 
-| Tool | Where It Was Used | How the Output Was Verified |
-|---|---|---|
+| Tool | Purpose | Files or Areas Affected | Verification Performed |
+|---|---|---|---|
 | | | |
 
 ## Deployment Notes
 
-Explain your hosting platform choice, environment variable setup, CORS policies, or any deployment challenges you encountered.
+- Hosting platform:
+- Database configuration:
+- CORS & preflight details:
 
 ## Demo
 
-- Demo Video URL:
+- Demo Video:
 - Preferred Live Demo Time:

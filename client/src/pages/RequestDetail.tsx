@@ -99,7 +99,7 @@ export const RequestDetail: React.FC = () => {
               <span>Status History Timeline</span>
             </h3>
             
-            <div class="flow-root">
+            <div className="flow-root">
               <ul className="-mb-8">
                 {request.statusHistory && request.statusHistory.map((history, idx) => (
                   <li key={idx}>
@@ -118,8 +118,8 @@ export const RequestDetail: React.FC = () => {
                             <p className="text-sm text-slate-800">
                               Status changed to <span className="font-semibold text-brand-600">{history.status}</span>
                             </p>
-                            {history.comment && (
-                              <p className="text-xs text-slate-500 italic mt-0.5">"{history.comment}"</p>
+                            {history.note && (
+                              <p className="text-xs text-slate-500 italic mt-0.5">"{history.note}"</p>
                             )}
                           </div>
                           <div className="text-right text-xs whitespace-nowrap text-slate-400">
