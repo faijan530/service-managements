@@ -4,15 +4,18 @@ export interface IStatusHistory {
   status: 'OPEN' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
   changedAt: Date;
   changedBy: Types.ObjectId;
-  comment?: string;
+  note?: string;
 }
 
 export interface IServiceRequest extends Document {
   requestNumber: string;
   title: string;
   description: string;
-  category: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  aiSummary?: string;
+  category: 'SOFTWARE' | 'HARDWARE' | 'NETWORK' | 'ACCESS' | 'OTHER';
+  aiSuggestedCategory?: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  aiSuggestedPriority?: string;
   status: 'OPEN' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
   createdBy: Types.ObjectId;
   assignedTo: Types.ObjectId | null;
@@ -36,7 +39,7 @@ const StatusHistorySchema = new Schema<IStatusHistory>({
     ref: 'User',
     required: true,
   },
-  comment: {
+  note: {
     type: String,
   },
 });
@@ -57,15 +60,26 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
       required: true,
       trim: true,
     },
+    aiSummary: {
+      type: String,
+    },
     category: {
       type: String,
+      enum: ['SOFTWARE', 'HARDWARE', 'NETWORK', 'ACCESS', 'OTHER'],
       required: true,
-      trim: true,
+      default: 'OTHER',
+    },
+    aiSuggestedCategory: {
+      type: String,
     },
     priority: {
       type: String,
-      enum: ['LOW', 'MEDIUM', 'HIGH'],
+      enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
+      required: true,
       default: 'MEDIUM',
+    },
+    aiSuggestedPriority: {
+      type: String,
     },
     status: {
       type: String,
@@ -89,11 +103,10 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
   }
 );
 
-// Pre-save hook to generate request number
 ServiceRequestSchema.pre('save', function (next) {
   if (!this.requestNumber) {
-    const randomDigits = Math.floor(1000 + Math.random() * 9000); // 4 digit random
-    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     this.requestNumber = `SR-${dateStr}-${randomDigits}`;
   }
   next();

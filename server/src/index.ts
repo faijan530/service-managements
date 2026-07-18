@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db';
 import authRoutes from './routes/authRoutes';
 import requestRoutes from './routes/requestRoutes';
+import aiRoutes from './routes/aiRoutes';
 
 dotenv.config();
 
@@ -12,14 +13,26 @@ const PORT = process.env.PORT || 5000;
 
 connectDB();
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000/',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Service is healthy' });
+});
+
+app.get('/api/health/ai', (req, res) => {
+  res.status(200).json({ status: 'OK', provider: process.env.AI_PROVIDER || 'mock' });
 });
 
 app.use((req, res, next) => {

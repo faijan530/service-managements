@@ -32,7 +32,7 @@ export const login = async (req: Request, res: Response) => {
     );
 
     return res.status(200).json({
-      token,
+      accessToken: token,
       user: {
         id: user._id,
         name: user.name,
@@ -65,7 +65,7 @@ export const register = async (req: Request, res: Response) => {
     );
 
     return res.status(201).json({
-      token,
+      accessToken: token,
       user: {
         id: newUser._id,
         name: newUser.name,
