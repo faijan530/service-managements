@@ -2,6 +2,23 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
+import { normalizeEmail, validateRegistrationInput } from '../utils/authValidation';
+
+const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+  return secret;
+};
+
+const signToken = (user: { _id: string; role: 'USER' | 'ADMIN'; email: string }) => {
+  return jwt.sign(
+    { id: user._id, role: user.role, email: user.email },
+    getJwtSecret() as jwt.Secret,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' } as jwt.SignOptions
+  );
+};
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -11,9 +28,10 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      return res.status(404).json({ error: 'User does not exist' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     if (!user.isActive) {
@@ -25,14 +43,10 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role, email: user.email },
-      process.env.JWT_SECRET || 'secret_key',
-      { expiresIn: '1d' }
-    );
+    const token = signToken({ _id: String(user._id), role: user.role, email: user.email });
 
     return res.status(200).json({
-      accessToken: token,
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -48,26 +62,32 @@ export const login = async (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role } = req.body;
+    const validation = validateRegistrationInput(name, email, password);
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
 
+    const normalizedEmail = validation.normalizedEmail;
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
     const newUser = new User({
-      name,
-      email,
+      name: validation.normalizedName,
+      email: normalizedEmail,
       passwordHash,
-      role: role || 'USER',
+      role: 'USER',
     });
 
     await newUser.save();
 
-    const token = jwt.sign(
-      { id: newUser._id, role: newUser.role, email: newUser.email },
-      process.env.JWT_SECRET || 'secret_key',
-      { expiresIn: '1d' }
-    );
+    const token = signToken({ _id: String(newUser._id), role: newUser.role, email: newUser.email });
 
     return res.status(201).json({
-      accessToken: token,
+      token,
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -78,4 +98,25 @@ export const register = async (req: Request, res: Response) => {
   } catch (error) {
     return res.status(500).json({ error: 'Registration failed', details: (error as Error).message });
   }
+};
+
+export const me = async (req: Request, res: Response) => {
+  const authReq = req as Request & { user?: { id: string; role: 'USER' | 'ADMIN'; email: string } };
+  if (!authReq.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const user = await User.findById(authReq.user.id).select('-passwordHash');
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  return res.status(200).json({
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
 };

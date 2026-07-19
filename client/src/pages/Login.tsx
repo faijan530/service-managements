@@ -21,9 +21,13 @@ export const Login: React.FC = () => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
-      
+
+      if (!token) {
+        throw new Error('Authentication response did not include a token');
+      }
+
       login(token, user);
-      
+
       if (user.role === 'ADMIN') {
         navigate('/admin');
       } else {

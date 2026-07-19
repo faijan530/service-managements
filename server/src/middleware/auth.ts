@@ -9,25 +9,22 @@ export interface AuthRequest extends Request {
   };
 }
 
-export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    if (req.headers['x-guest-bypass'] === 'true') {
-      req.user = {
-        id: 'mock-guest-id',
-        role: 'USER',
-        email: 'guest@example.com'
-      };
-      return next();
-    }
     return res.status(401).json({ error: 'No token, authorization denied' });
   }
 
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key') as any;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ error: 'Server authentication is not configured' });
+    }
+
+    const decoded = jwt.verify(token, secret) as AuthRequest['user'];
     req.user = decoded;
     next();
   } catch (err) {
@@ -35,18 +32,19 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
   }
 };
 
-export const isAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.headers['x-admin-override'] === 'true') {
-    return next();
-  }
-  
-  if (!req.user) {
-    return res.status(401).json({ error: 'Authorization required' });
-  }
+export const authorize = (requiredRole: 'USER' | 'ADMIN') => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
-  if (req.user.role === 'ADMIN') {
+    if (req.user.role !== requiredRole && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Unauthorized access' });
+    }
+
     next();
-  } else {
-    return res.status(401).json({ error: 'Unauthorized: Admin access required' });
-  }
+  };
 };
+
+export const requireAuth = authenticate;
+export const isAdmin = authorize('ADMIN');

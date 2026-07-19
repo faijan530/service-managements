@@ -16,7 +16,7 @@ import './index.css';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-slate-50">
@@ -24,11 +24,29 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       </div>
     );
   }
-  
+
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-  
+
+  return <>{children}</>;
+};
+
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token, user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-slate-50">
+        <div className="animate-spin h-8 w-8 text-brand-600 border-4 border-t-transparent border-brand-600 rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!token || user?.role !== 'ADMIN') {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -79,8 +97,22 @@ const App: React.FC = () => {
               } 
             />
             
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUserManagement />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <AdminRoute>
+                  <AdminUserManagement />
+                </AdminRoute>
+              }
+            />
             
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

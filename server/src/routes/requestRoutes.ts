@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import {
   createRequest,
   getRequests,
@@ -11,11 +11,11 @@ import {
 
 const router = Router();
 
-router.post('/', requireAuth, createRequest);
-router.get('/', requireAuth, getRequests);
-router.get('/:id', getRequestById);
-router.patch('/:id/status', requireAuth, updateRequestStatus);
-router.put('/:id/assign', requireAuth, assignRequest);
-router.post('/:id/cancel', requireAuth, cancelRequest);
+router.post('/', authenticate, createRequest);
+router.get('/', authenticate, getRequests);
+router.get('/:id', authenticate, getRequestById);
+router.patch('/:id/status', authenticate, updateRequestStatus);
+router.put('/:id/assign', authenticate, assignRequest);
+router.post('/:id/cancel', authenticate, cancelRequest);
 
 export default router;
