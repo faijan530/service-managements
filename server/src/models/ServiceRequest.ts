@@ -1,4 +1,5 @@
 import { Schema, model, Document, Types } from 'mongoose';
+import crypto from 'crypto';
 
 export interface IStatusHistory {
   status: 'OPEN' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
@@ -61,11 +62,15 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
       type: String,
       required: true,
       trim: true,
+      minlength: 5,
+      maxlength: 120,
     },
     description: {
       type: String,
       required: true,
       trim: true,
+      minlength: 15,
+      maxlength: 4000,
     },
     aiSummary: {
       type: String,
@@ -84,6 +89,7 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
       enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
       required: true,
       default: 'MEDIUM',
+      index: true,
     },
     aiSuggestedPriority: {
       type: String,
@@ -92,16 +98,19 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
       type: String,
       enum: ['OPEN', 'IN_REVIEW', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'],
       default: 'OPEN',
+      index: true,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true,
     },
     assignedTo: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       default: null,
+      index: true,
     },
     statusHistory: [StatusHistorySchema],
   },
@@ -112,9 +121,9 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
 
 ServiceRequestSchema.pre('save', function (next) {
   if (!this.requestNumber) {
-    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase();
     const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    this.requestNumber = `SR-${dateStr}-${randomDigits}`;
+    this.requestNumber = `SR-${dateStr}-${randomHex}`;
   }
   next();
 });

@@ -1,12 +1,35 @@
-import React, { useState } from 'react';
-import { ShieldAlert, Users, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, Users, Trash2, CheckCircle, RefreshCw } from 'lucide-react';
+import api from '../api/api';
+import { User } from '../types';
 
 export const AdminUserManagement: React.FC = () => {
-  const [users] = useState([
-    { id: '1', name: 'Regular User', email: 'user@example.com', role: 'USER', isActive: true },
-    { id: '2', name: 'Admin User', email: 'admin@example.com', role: 'ADMIN', isActive: true },
-    { id: '3', name: 'Deactivated Tech', email: 'deactivated@example.com', role: 'USER', isActive: false },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await api.get('/auth/users');
+      setUsers(res.data);
+    } catch (err) {
+      console.error('Failed to fetch users', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      await api.patch(`/auth/users/${id}/status`, { isActive: !currentStatus });
+      fetchUsers();
+    } catch (err) {
+      console.error('Failed to update status', err);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -24,14 +47,19 @@ export const AdminUserManagement: React.FC = () => {
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
           <div className="flex items-center space-x-2 text-slate-700">
             <Users className="h-5 w-5" />
-            <span className="font-semibold text-sm">Active System Accounts ({users.length})</span>
+            <span className="font-semibold text-sm">System Accounts ({users.length})</span>
           </div>
-          <span className="text-xs text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1 rounded-md font-semibold">
-            ReadOnly Panel (Stub)
-          </span>
+          <button onClick={fetchUsers} className="text-slate-500 hover:text-slate-700">
+            <RefreshCw className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <RefreshCw className="animate-spin h-8 w-8 text-brand-600" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
@@ -43,8 +71,8 @@ export const AdminUserManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50/50 transition">
+              {users.map((u: any) => (
+                <tr key={u._id} className="hover:bg-slate-50/50 transition">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">{u.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{u.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -59,11 +87,11 @@ export const AdminUserManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     <button
-                      onClick={() => alert('Account deactivation is disabled in evaluation environment.')}
-                      className="inline-flex items-center space-x-1 text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md transition"
+                      onClick={() => handleToggleStatus(u._id, u.isActive)}
+                      className={`inline-flex items-center space-x-1 px-2 py-1 rounded-md transition ${u.isActive ? 'text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-slate-200' : 'text-slate-500 hover:text-green-600 bg-slate-100 hover:bg-slate-200'}`}
                     >
-                      <Trash2 className="h-4 w-4" />
-                      <span>Deactivate</span>
+                      {u.isActive ? <Trash2 className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                      <span>{u.isActive ? 'Deactivate' : 'Activate'}</span>
                     </button>
                   </td>
                 </tr>
@@ -71,6 +99,7 @@ export const AdminUserManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );

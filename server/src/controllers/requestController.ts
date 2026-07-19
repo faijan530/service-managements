@@ -89,7 +89,8 @@ export const getRequests = async (req: AuthRequest, res: Response) => {
     const requests = await ServiceRequest.find(query)
       .populate('createdBy', 'name email')
       .populate('assignedTo', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.status(200).json(requests);
   } catch (error) {
@@ -108,7 +109,8 @@ export const getRequestById = async (req: AuthRequest, res: Response) => {
     const request = await ServiceRequest.findById(id)
       .populate('createdBy', 'name email')
       .populate('assignedTo', 'name email')
-      .populate('statusHistory.changedBy', 'name email');
+      .populate('statusHistory.changedBy', 'name email')
+      .lean();
 
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });

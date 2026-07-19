@@ -138,9 +138,57 @@ export const getAdmins = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const admins = await User.find({ role: 'ADMIN', isActive: true }).select('_id name email');
+    const admins = await User.find({ role: 'ADMIN', isActive: true })
+      .select('_id name email')
+      .lean();
     return res.status(200).json(admins);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch admins' });
+  }
+};
+
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const authReq = req as Request & { user?: { id: string; role: 'USER' | 'ADMIN'; email: string } };
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (authReq.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const users = await User.find({}).select('-passwordHash').lean();
+    return res.status(200).json(users);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch users' });
+  }
+};
+
+export const updateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const authReq = req as Request & { user?: { id: string; role: 'USER' | 'ADMIN'; email: string } };
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (authReq.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    user.isActive = isActive;
+    await user.save();
+
+    return res.status(200).json({ message: 'User status updated', user: { _id: user._id, name: user.name, isActive: user.isActive } });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to update user status' });
   }
 };

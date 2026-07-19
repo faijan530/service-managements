@@ -124,11 +124,6 @@ export const Login: React.FC = () => {
           </div>
         </form>
 
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-6 text-xs text-slate-500 space-y-1">
-          <p className="font-semibold text-slate-700">Default Seed Credentials:</p>
-          <p>User: <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">user@example.com</code> / <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">User@123</code></p>
-          <p>Admin: <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">admin@example.com</code> / <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">Admin@123</code></p>
-        </div>
       </div>
     </div>
   );
