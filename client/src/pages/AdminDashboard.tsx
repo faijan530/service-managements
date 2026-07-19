@@ -5,56 +5,101 @@ import { useAuth } from '../context/AuthContext';
 import { ServiceRequest } from '../types';
 import { AlertCircle, RefreshCw, ShieldAlert } from 'lucide-react';
 
+const STATUS_OPTIONS = ['OPEN', 'IN_REVIEW', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'] as const;
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
+
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [admins, setAdmins] = useState<{_id: string, name: string, email: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const pageSize = 8;
 
   const [stats, setStats] = useState({
-    total: 35,
-    open: 18,
-    inProgress: 10,
-    resolved: 5,
-    cancelled: 2
+    total: 0,
+    open: 0,
+    inProgress: 0,
+    resolved: 0,
+    cancelled: 0,
   });
 
-  const fetchRequests = async () => {
+  const fetchRequestsAndAdmins = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('/requests');
-      setRequests(res.data);
+      const [reqRes, adminRes] = await Promise.all([
+        api.get('/requests'),
+        api.get('/auth/admins')
+      ]);
+      setRequests(reqRes.data);
+      setAdmins(adminRes.data);
+      const nextStats = {
+        total: reqRes.data.length,
+        open: reqRes.data.filter((request: ServiceRequest) => request.status === 'OPEN').length,
+        inProgress: reqRes.data.filter((request: ServiceRequest) => request.status === 'IN_PROGRESS').length,
+        resolved: reqRes.data.filter((request: ServiceRequest) => request.status === 'RESOLVED').length,
+        cancelled: reqRes.data.filter((request: ServiceRequest) => request.status === 'CANCELLED').length,
+      };
+      setStats(nextStats);
     } catch (err: any) {
-      setError('Failed to retrieve service requests for admin dashboard.');
+      setError('Failed to retrieve data for admin dashboard.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRequests();
+    fetchRequestsAndAdmins();
   }, []);
+
+  const filteredRequests = requests.filter((request) => {
+    const matchesSearch = `${request.requestNumber} ${request.title} ${request.description}`.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === 'ALL' || request.status === statusFilter;
+    const matchesPriority = priorityFilter === 'ALL' || request.priority === priorityFilter;
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  const pagedRequests = filteredRequests.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / pageSize));
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, priorityFilter]);
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      await api.put(`/requests/${id}/status`, { status: newStatus });
-      alert('Status updated successfully!');
-      fetchRequests();
+      await api.patch(`/requests/${id}/status`, { status: newStatus });
+      setError(null);
+      fetchRequestsAndAdmins();
     } catch (err: any) {
-      alert(`Error updating status: ${err.response?.data?.error || err.message}`);
+      setError(err.response?.data?.error || 'Error updating status.');
     }
   };
 
   const handleAssign = async (id: string, assignedUserId: string) => {
     try {
       const res = await api.put(`/requests/${id}/assign`, { assignedTo: assignedUserId });
-      alert(res.data.message || 'Assigned successfully.');
-      fetchRequests();
+      setError(null);
+      fetchRequestsAndAdmins();
     } catch (err: any) {
-      alert('Assignment failed.');
+      setError(err.response?.data?.error || 'Assignment failed.');
+    }
+  };
+
+  const handlePriorityChange = async (id: string, newPriority: string) => {
+    try {
+      await api.patch(`/requests/${id}/priority`, { priority: newPriority });
+      setError(null);
+      fetchRequestsAndAdmins();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Priority update failed.');
     }
   };
 
@@ -99,11 +144,28 @@ export const AdminDashboard: React.FC = () => {
             <AlertCircle className="h-5 w-5 text-red-500" />
             <span className="text-sm text-red-700">{error}</span>
           </div>
-          <button onClick={fetchRequests} className="text-red-700 hover:text-red-900">
+          <button onClick={fetchRequestsAndAdmins} className="text-red-700 hover:text-red-900">
             <RefreshCw className="h-4 w-4" />
           </button>
         </div>
       )}
+
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by request number, title, or description"
+          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="ALL">All statuses</option>
+          {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
+        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="ALL">All priorities</option>
+          {PRIORITY_OPTIONS.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+        </select>
+      </div>
 
       {loading ? (
         <div className="flex justify-center items-center py-20">
@@ -125,15 +187,19 @@ export const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {requests.map((req) => (
+                {pagedRequests.map((req) => (
                   <tr key={req._id} className="hover:bg-slate-50/50 transition">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-brand-600">{req.requestNumber}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-900 max-w-xs truncate">{req.title}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{req.createdBy?.name || 'User'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${req.priority === 'HIGH' ? 'text-red-700 bg-red-50' : 'text-slate-700 bg-slate-100'}`}>
-                        {req.priority}
-                      </span>
+                      <select
+                        value={req.priority}
+                        onChange={(e) => handlePriorityChange(req._id, e.target.value)}
+                        className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-1"
+                      >
+                        {PRIORITY_OPTIONS.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                      </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <select
@@ -141,11 +207,7 @@ export const AdminDashboard: React.FC = () => {
                         onChange={(e) => handleStatusChange(req._id, e.target.value)}
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-1"
                       >
-                        <option value="OPEN">OPEN</option>
-                        <option value="IN_REVIEW">IN_REVIEW</option>
-                        <option value="IN_PROGRESS">IN_PROGRESS</option>
-                        <option value="RESOLVED">RESOLVED</option>
-                        <option value="CANCELLED">CANCELLED</option>
+                        {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
                       </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
@@ -155,8 +217,11 @@ export const AdminDashboard: React.FC = () => {
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-1"
                       >
                         <option value="">Unassigned</option>
-                        <option value="60d5ec49867c2e36f0b48c1a">Admin User (admin@example.com)</option>
-                        <option value="60d5ec49867c2e36f0b48c1b">Backup Admin</option>
+                        {admins.map((admin) => (
+                          <option key={admin._id} value={admin._id}>
+                            {admin.name} ({admin.email})
+                          </option>
+                        ))}
                       </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -171,6 +236,17 @@ export const AdminDashboard: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {!loading && filteredRequests.length > 0 && (
+        <div className="flex justify-between items-center mt-4 text-sm text-slate-500">
+          <span>Showing {Math.min(pageSize, filteredRequests.length)} of {filteredRequests.length} matches</span>
+          <div className="flex items-center space-x-2">
+            <button onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="px-3 py-1 rounded border border-slate-300 disabled:opacity-50">Previous</button>
+            <span>Page {page} of {totalPages}</span>
+            <button onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages} className="px-3 py-1 rounded border border-slate-300 disabled:opacity-50">Next</button>
           </div>
         </div>
       )}

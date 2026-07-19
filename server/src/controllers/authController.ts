@@ -39,6 +39,12 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
+    
+    // Write debug info to a file so we can see what the user is typing
+    const fs = require('fs');
+    fs.appendFileSync('login_debug.log', `Login attempt for ${normalizedEmail}: password matched? ${isMatch}, password length: ${password.length}, body: ${JSON.stringify(req.body)}\n`);
+    console.log(`Login attempt for ${normalizedEmail}: password matched? ${isMatch}, password length: ${password.length}, body:`, req.body);
+    
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -119,4 +125,22 @@ export const me = async (req: Request, res: Response) => {
       role: user.role,
     },
   });
+};
+
+export const getAdmins = async (req: Request, res: Response) => {
+  try {
+    const authReq = req as Request & { user?: { id: string; role: 'USER' | 'ADMIN'; email: string } };
+    if (!authReq.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (authReq.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const admins = await User.find({ role: 'ADMIN', isActive: true }).select('_id name email');
+    return res.status(200).json(admins);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch admins' });
+  }
 };

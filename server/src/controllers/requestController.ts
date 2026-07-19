@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { ServiceRequest } from '../models/ServiceRequest';
 import { Types } from 'mongoose';
 import { buildRequestFingerprint } from '../utils/requestFingerprint';
+import { canTransitionStatus, getAllowedNextStatuses, RequestStatus } from '../utils/requestWorkflow';
 
 export const createRequest = async (req: AuthRequest, res: Response) => {
   try {
@@ -83,9 +84,9 @@ export const getRequests = async (req: AuthRequest, res: Response) => {
     }
 
     const isAdmin = req.user.role === 'ADMIN';
-    const filter = isAdmin ? {} : { createdBy: new Types.ObjectId(req.user.id) };
+    const query = isAdmin ? {} : { createdBy: new Types.ObjectId(req.user.id) };
 
-    const requests = await ServiceRequest.find(filter)
+    const requests = await ServiceRequest.find(query)
       .populate('createdBy', 'name email')
       .populate('assignedTo', 'name email')
       .sort({ createdAt: -1 });
@@ -143,14 +144,19 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Request not found' });
     }
 
+    const normalizedStatus = String(status || '').toUpperCase() as RequestStatus;
     const allowedStatuses = ['OPEN', 'IN_REVIEW', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Invalid status transition' });
+    if (!allowedStatuses.includes(normalizedStatus)) {
+      return res.status(400).json({ error: 'Invalid status value' });
     }
 
-    request.status = status;
+    if (!canTransitionStatus(request.status as RequestStatus, normalizedStatus)) {
+      return res.status(409).json({ error: 'Invalid status transition. Follow OPEN -> IN_REVIEW -> IN_PROGRESS -> RESOLVED.' });
+    }
+
+    request.status = normalizedStatus;
     request.statusHistory.push({
-      status,
+      status: normalizedStatus,
       changedBy: new Types.ObjectId(req.user.id),
       note: 'Status updated by admin',
       changedAt: new Date(),
@@ -194,6 +200,45 @@ export const assignRequest = async (req: AuthRequest, res: Response) => {
     return res.status(200).json({ message: 'Request assignment updated', request });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to assign request' });
+  }
+};
+
+export const updateRequestPriority = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { priority } = req.body;
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const request = await ServiceRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    const normalizedPriority = String(priority || '').toUpperCase();
+    const allowedPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+    if (!allowedPriorities.includes(normalizedPriority)) {
+      return res.status(400).json({ error: 'Invalid priority value' });
+    }
+
+    request.priority = normalizedPriority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    request.statusHistory.push({
+      status: request.status,
+      changedBy: new Types.ObjectId(req.user.id),
+      note: 'Priority updated by admin',
+      changedAt: new Date(),
+    });
+
+    await request.save();
+    return res.status(200).json(request);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to update priority' });
   }
 };
 
