@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
+import { analyzeRequestText } from '../utils/aiAnalysis';
 
 export const analyzeRequest = async (req: AuthRequest, res: Response) => {
   try {
@@ -8,42 +9,27 @@ export const analyzeRequest = async (req: AuthRequest, res: Response) => {
     }
 
     const { title, description } = req.body;
-    if (!title || !description) {
+    const trimmedTitle = String(title || '').trim();
+    const trimmedDescription = String(description || '').trim();
+
+    if (!trimmedTitle || !trimmedDescription) {
       return res.status(400).json({ error: 'Title and description are required for AI analysis' });
     }
 
-    const titleLower = String(title).toLowerCase();
-    const descLower = String(description).toLowerCase();
+    const result = await analyzeRequestText(trimmedTitle, trimmedDescription, {
+      retries: 2,
+      timeoutMs: 3000,
+    });
 
-    if (titleLower.includes('vpn') || descLower.includes('vpn')) {
-      return res.status(200).json({
-        summary: 'Issues establishing VPN connection to corporate network.',
-        suggestedCategory: 'NETWORK',
-        suggestedPriority: 'HIGH',
-        reason: 'VPN connectivity issues prevent remote staff from accessing secure systems, warranting high priority.',
-      });
-    } else if (titleLower.includes('internet') || descLower.includes('internet') || titleLower.includes('wifi')) {
-      return res.status(200).json({
-        summary: 'Internet or Wi-Fi connectivity outage/instability.',
-        suggestedCategory: 'NETWORK',
-        suggestedPriority: 'MEDIUM',
-        reason: 'Affects local work but offline backups or alternative tasks may remain possible.',
-      });
-    } else if (titleLower.includes('laptop') || descLower.includes('laptop') || titleLower.includes('screen')) {
-      return res.status(200).json({
-        summary: 'Hardware malfunction affecting company laptop.',
-        suggestedCategory: 'HARDWARE',
-        suggestedPriority: 'LOW',
-        reason: 'Single user hardware issue. Can be resolved via temporary loaner device.',
-      });
-    } else {
-      return res.status(200).json({
-        summary: 'General support inquiry.',
-        suggestedCategory: 'OTHER',
-        suggestedPriority: 'MEDIUM',
-        reason: 'General inquiry with no specific network, hardware, or access flags.',
-      });
-    }
+    return res.status(200).json({
+      summary: result.summary,
+      category: result.suggestedCategory,
+      suggestedCategory: result.suggestedCategory,
+      priority: result.suggestedPriority,
+      suggestedPriority: result.suggestedPriority,
+      reason: result.reason,
+      fallbackUsed: result.fallbackUsed,
+    });
   } catch (error) {
     return res.status(500).json({ error: 'AI Analysis engine failed' });
   }

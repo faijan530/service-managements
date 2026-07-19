@@ -44,7 +44,40 @@ The audit aimed to verify and improve the following functionality:
 
 ---
 
-## 3.1 Create Request
+## 3.1 AI Service Audit
+
+### Finding
+
+The AI analysis endpoint returned fixed suggestions directly from the controller and did not guard against provider failures, invalid payloads, or slow responses.
+
+### Risk
+
+- Unvalidated AI suggestions could override backend-safe category and priority rules.
+- Provider downtime could surface hard failures to the user.
+- The frontend would not know whether the response came from a live AI source or a safe backup path.
+
+### Resolution
+
+Implemented a dedicated AI analysis utility that:
+
+- retries failed provider calls up to 2 times,
+- enforces a 3-second timeout,
+- validates the response shape and values,
+- normalizes category and priority to the backend-safe allowlist,
+- falls back to a deterministic heuristic when the provider is unavailable or returns invalid data,
+- preserves a clear fallback flag for the client.
+
+The controller now returns a normalized response with both the suggested values and a fallback indicator, and the frontend displays that fallback state without bypassing backend validation.
+
+### Result
+
+The AI service is now resilient, validated, and safe even when the provider fails.
+
+**Status:** ✅ Implemented
+
+---
+
+## 3.2 Create Request
 
 ### Finding
 
@@ -437,39 +470,39 @@ Unauthorized users cannot access another user's tickets.
 
 The application was rebuilt after implementing all dashboard improvements.
 
-| Verification | Result |
-|--------------|--------|
-| Client Build | ✅ Passed |
-| Server Build | ✅ Passed |
-| Search Functionality | ✅ Verified |
-| Filter Functionality | ✅ Verified |
-| Pagination | ✅ Verified |
+| Verification                    | Result      |
+| ------------------------------- | ----------- |
+| Client Build                    | ✅ Passed   |
+| Server Build                    | ✅ Passed   |
+| Search Functionality            | ✅ Verified |
+| Filter Functionality            | ✅ Verified |
+| Pagination                      | ✅ Verified |
 | Duplicate Submission Protection | ✅ Verified |
-| Ticket Cancellation | ✅ Verified |
-| Backend Validation | ✅ Verified |
-| Frontend Validation | ✅ Verified |
-| Ownership Enforcement | ✅ Verified |
+| Ticket Cancellation             | ✅ Verified |
+| Backend Validation              | ✅ Verified |
+| Frontend Validation             | ✅ Verified |
+| Ownership Enforcement           | ✅ Verified |
 
 ---
 
 # 6. Audit Summary
 
-| Feature | Status |
-|----------|--------|
-| Create Request | ✅ Improved |
-| View Requests | ✅ Improved |
-| Search | ✅ Implemented |
-| Filter | ✅ Implemented |
-| Pagination | ✅ Implemented |
-| Cancel Ticket | ✅ Improved |
+| Feature                         | Status         |
+| ------------------------------- | -------------- |
+| Create Request                  | ✅ Improved    |
+| View Requests                   | ✅ Improved    |
+| Search                          | ✅ Implemented |
+| Filter                          | ✅ Implemented |
+| Pagination                      | ✅ Implemented |
+| Cancel Ticket                   | ✅ Improved    |
 | Duplicate Submission Prevention | ✅ Implemented |
-| Loading States | ✅ Implemented |
-| Error States | ✅ Improved |
-| Empty State | ✅ Implemented |
-| Responsive Design | ✅ Improved |
-| Backend Validation | ✅ Implemented |
-| Frontend Validation | ✅ Implemented |
-| Owner-Based Access Control | ✅ Implemented |
+| Loading States                  | ✅ Implemented |
+| Error States                    | ✅ Improved    |
+| Empty State                     | ✅ Implemented |
+| Responsive Design               | ✅ Improved    |
+| Backend Validation              | ✅ Implemented |
+| Frontend Validation             | ✅ Implemented |
+| Owner-Based Access Control      | ✅ Implemented |
 
 ---
 

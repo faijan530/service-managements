@@ -56,15 +56,24 @@ export const CreateRequest: React.FC = () => {
 
     try {
       const response = await api.post('/ai/analyze-request', { title: title.trim(), description: description.trim() });
-      const { summary, suggestedCategory, suggestedPriority, reason } = response.data;
+      const { summary, category, suggestedCategory, priority, suggestedPriority, reason, fallbackUsed } = response.data;
+
+      const normalizedCategory = category || suggestedCategory || 'OTHER';
+      const normalizedPriority = priority || suggestedPriority || 'MEDIUM';
 
       setAiSummary(summary || 'No summary returned');
-      setAiSuggestedCategory(suggestedCategory || 'OTHER');
-      setAiSuggestedPriority(suggestedPriority || 'MEDIUM');
+      setAiSuggestedCategory(normalizedCategory);
+      setAiSuggestedPriority(normalizedPriority);
       setAiReason(reason || 'No reasoning provided');
 
-      setCategory(suggestedCategory || 'OTHER');
-      setPriority(suggestedPriority || 'MEDIUM');
+      setCategory(normalizedCategory);
+      setPriority(normalizedPriority);
+
+      if (fallbackUsed) {
+        setError('AI service was unavailable, so a safe fallback suggestion was used. You can still adjust the category and priority before submitting.');
+      } else {
+        setError(null);
+      }
     } catch (err: any) {
       setError(`AI analysis failed: ${err.response?.data?.error || err.message}`);
     } finally {
