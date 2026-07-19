@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes';
 import requestRoutes from './routes/requestRoutes';
 import aiRoutes from './routes/aiRoutes';
 import { securityHeaders, sanitizeInput, sanitizeOutput } from './middleware/security';
+import { errorHandler, notFound } from './middleware/errorHandler';
 
 const envFiles = [path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), 'server/.env')];
 envFiles.forEach((file) => {
@@ -66,18 +67,8 @@ app.get('/api/health/ai', (req, res) => {
   res.status(200).json({ status: 'OK', provider: process.env.AI_PROVIDER || 'mock' });
 });
 
-app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
-});
-
-app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  if (err instanceof SyntaxError && 'body' in err) {
-    return res.status(400).json({ error: 'Invalid JSON payload' });
-  }
-
-  console.error(err);
-  return res.status(500).json({ error: 'Internal server error' });
-});
+app.use(notFound);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
