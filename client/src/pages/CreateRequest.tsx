@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle, FileText, Send, ArrowLeft, Sparkles, RefreshC
 
 export const CreateRequest: React.FC = () => {
   const navigate = useNavigate();
-  
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('OTHER');
@@ -21,48 +21,73 @@ export const CreateRequest: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const validateForm = () => {
+    const trimmedTitle = title.trim();
+    const trimmedDescription = description.trim();
+
+    if (trimmedTitle.length < 5) {
+      return 'Title must be at least 5 characters long.';
+    }
+
+    if (trimmedTitle.length > 120) {
+      return 'Title must not exceed 120 characters.';
+    }
+
+    if (trimmedDescription.length < 15) {
+      return 'Please provide a more detailed description (at least 15 characters).';
+    }
+
+    if (trimmedDescription.length > 4000) {
+      return 'Description is too long. Please keep it under 4000 characters.';
+    }
+
+    return null;
+  };
+
   const handleAIAnalyze = async () => {
-    if (!title || !description) {
-      setError('Please provide both Title and Description before requesting AI analysis.');
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
-    
+
     setError(null);
     setLoadingAI(true);
 
     try {
-      const response = await api.post('/ai/analyze', { title, description });
+      const response = await api.post('/ai/analyze-request', { title: title.trim(), description: description.trim() });
+      const { summary, suggestedCategory, suggestedPriority, reason } = response.data;
 
-      const {
-        aiSummary: fetchedSummary,
-        aiSuggestedCategory: fetchedCategory,
-        aiSuggestedPriority: fetchedPriority,
-        aiReason: fetchedReason
-      } = response.data;
+      setAiSummary(summary || 'No summary returned');
+      setAiSuggestedCategory(suggestedCategory || 'OTHER');
+      setAiSuggestedPriority(suggestedPriority || 'MEDIUM');
+      setAiReason(reason || 'No reasoning provided');
 
-      setAiSummary(fetchedSummary || 'No summary returned');
-      setAiSuggestedCategory(fetchedCategory || 'OTHER');
-      setAiSuggestedPriority(fetchedPriority || 'MEDIUM');
-      setAiReason(fetchedReason || 'No reasoning provided');
-      
-      setCategory(fetchedCategory || 'OTHER');
-      setPriority(fetchedPriority || 'MEDIUM');
-      setLoadingAI(false);
+      setCategory(suggestedCategory || 'OTHER');
+      setPriority(suggestedPriority || 'MEDIUM');
     } catch (err: any) {
       setError(`AI analysis failed: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setLoadingAI(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setError(null);
     setSuccess(null);
     setLoading(true);
 
     try {
       const response = await api.post('/requests', {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         category,
         priority,
         aiSummary,
@@ -71,7 +96,6 @@ export const CreateRequest: React.FC = () => {
       });
 
       setSuccess(`Request created successfully! Reference: ${response.data.requestNumber}`);
-      
       setTitle('');
       setDescription('');
       setCategory('OTHER');
@@ -97,7 +121,7 @@ export const CreateRequest: React.FC = () => {
         <span className="text-sm font-medium">Back</span>
       </button>
 
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-lg">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-lg">
         <div className="flex items-center space-x-3 mb-6">
           <div className="bg-brand-100 text-brand-600 p-2.5 rounded-xl">
             <FileText className="h-6 w-6" />
@@ -197,7 +221,8 @@ export const CreateRequest: React.FC = () => {
               <button
                 type="button"
                 onClick={handleAIAnalyze}
-                className="w-full flex justify-center items-center space-x-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm hover:from-brand-700 hover:to-indigo-700 transition"
+                disabled={loadingAI || loading}
+                className="w-full flex justify-center items-center space-x-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm hover:from-brand-700 hover:to-indigo-700 transition disabled:opacity-60"
               >
                 {loadingAI ? (
                   <>
@@ -240,8 +265,8 @@ export const CreateRequest: React.FC = () => {
           <div className="flex justify-end pt-4 border-t border-slate-100">
             <button
               type="submit"
-              disabled={loading}
-              className="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-md transition"
+              disabled={loading || loadingAI}
+              className="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-md transition disabled:opacity-60"
             >
               <Send className="h-4 w-4" />
               <span>{loading ? 'Submitting...' : 'Submit Request'}</span>

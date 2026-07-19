@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { ServiceRequest } from '../models/ServiceRequest';
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
+import { buildRequestFingerprint } from '../utils/requestFingerprint';
 
 export const createRequest = async (req: AuthRequest, res: Response) => {
   try {
@@ -16,11 +17,47 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    const trimmedTitle = String(title).trim();
+    const trimmedDescription = String(description).trim();
+    const normalizedCategory = String(category || 'OTHER').toUpperCase();
+    const normalizedPriority = String(priority || 'MEDIUM').toUpperCase();
+    const allowedCategories = ['SOFTWARE', 'HARDWARE', 'NETWORK', 'ACCESS', 'OTHER'];
+    const allowedPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+
+    if (trimmedTitle.length < 5 || trimmedTitle.length > 120) {
+      return res.status(400).json({ error: 'Title must be between 5 and 120 characters' });
+    }
+
+    if (trimmedDescription.length < 15 || trimmedDescription.length > 4000) {
+      return res.status(400).json({ error: 'Description must be between 15 and 4000 characters' });
+    }
+
+    if (!allowedCategories.includes(normalizedCategory)) {
+      return res.status(400).json({ error: 'Invalid category selected' });
+    }
+
+    if (!allowedPriorities.includes(normalizedPriority)) {
+      return res.status(400).json({ error: 'Invalid priority selected' });
+    }
+
+    const fingerprint = buildRequestFingerprint(trimmedTitle, trimmedDescription);
+    const existingRequest = await ServiceRequest.findOne({
+      createdBy: new Types.ObjectId(requesterId),
+      fingerprint,
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      status: { $ne: 'CANCELLED' },
+    });
+
+    if (existingRequest) {
+      return res.status(409).json({ error: 'A similar request was submitted recently. Please review your existing tickets.' });
+    }
+
     const newRequest = new ServiceRequest({
-      title: String(title).trim(),
-      description: String(description).trim(),
-      category: category || 'OTHER',
-      priority: priority || 'MEDIUM',
+      title: trimmedTitle,
+      description: trimmedDescription,
+      fingerprint,
+      category: normalizedCategory as 'SOFTWARE' | 'HARDWARE' | 'NETWORK' | 'ACCESS' | 'OTHER',
+      priority: normalizedPriority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
       status: 'OPEN',
       createdBy: new Types.ObjectId(requesterId),
       statusHistory: [

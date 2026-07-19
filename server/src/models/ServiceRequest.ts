@@ -9,6 +9,7 @@ export interface IStatusHistory {
 
 export interface IServiceRequest extends Document {
   requestNumber: string;
+  fingerprint: string;
   title: string;
   description: string;
   aiSummary?: string;
@@ -49,6 +50,11 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
     requestNumber: {
       type: String,
       unique: true,
+    },
+    fingerprint: {
+      type: String,
+      required: true,
+      index: true,
     },
     title: {
       type: String,
