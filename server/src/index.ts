@@ -6,6 +6,7 @@ import { connectDB } from './config/db';
 import authRoutes from './routes/authRoutes';
 import requestRoutes from './routes/requestRoutes';
 import aiRoutes from './routes/aiRoutes';
+import { securityHeaders, sanitizeInput, sanitizeOutput } from './middleware/security';
 
 const envFiles = [path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), 'server/.env')];
 envFiles.forEach((file) => {
@@ -14,6 +15,7 @@ envFiles.forEach((file) => {
 
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
+app.disable('x-powered-by');
 
 connectDB();
 
@@ -45,9 +47,12 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
+app.use(securityHeaders);
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json());
+app.use(sanitizeInput);
+app.use(sanitizeOutput);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
@@ -62,7 +67,16 @@ app.get('/api/health/ai', (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found or server error' });
+  res.status(404).json({ error: 'Endpoint not found' });
+});
+
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+
+  console.error(err);
+  return res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {

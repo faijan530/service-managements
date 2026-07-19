@@ -1,16 +1,19 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
 
-export const analyzeRequest = async (req: Request, res: Response) => {
+export const analyzeRequest = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description } = req.body;
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
+    const { title, description } = req.body;
     if (!title || !description) {
       return res.status(400).json({ error: 'Title and description are required for AI analysis' });
     }
 
-    const apiKey = process.env.AI_SERVICE_TOKEN; 
-    const titleLower = title.toLowerCase();
-    const descLower = description.toLowerCase();
+    const titleLower = String(title).toLowerCase();
+    const descLower = String(description).toLowerCase();
 
     if (titleLower.includes('vpn') || descLower.includes('vpn')) {
       return res.status(200).json({
@@ -37,11 +40,11 @@ export const analyzeRequest = async (req: Request, res: Response) => {
       return res.status(200).json({
         summary: 'General support inquiry.',
         suggestedCategory: 'OTHER',
-        suggestedPriority: 'CRITICAL',
+        suggestedPriority: 'MEDIUM',
         reason: 'General inquiry with no specific network, hardware, or access flags.',
       });
     }
   } catch (error) {
-    return res.status(500).json({ error: 'AI Analysis engine failed', details: (error as Error).message });
+    return res.status(500).json({ error: 'AI Analysis engine failed' });
   }
 };
