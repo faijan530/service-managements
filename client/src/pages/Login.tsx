@@ -78,6 +78,7 @@ export const Login: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
+                  pattern="^\S+@\S+\.\S+$"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
@@ -100,6 +101,8 @@ export const Login: React.FC = () => {
                   type="password"
                   autoComplete="current-password"
                   required
+                  minLength={8}
+                  maxLength={128}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"

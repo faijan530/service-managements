@@ -165,6 +165,8 @@ export const CreateRequest: React.FC = () => {
                 <input
                   type="text"
                   required
+                  minLength={5}
+                  maxLength={120}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
@@ -178,6 +180,8 @@ export const CreateRequest: React.FC = () => {
                 </label>
                 <textarea
                   required
+                  minLength={15}
+                  maxLength={4000}
                   rows={6}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
