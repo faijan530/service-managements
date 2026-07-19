@@ -53,8 +53,9 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
     },
     fingerprint: {
       type: String,
-      required: true,
+      required: false,
       index: true,
+      default: '',
     },
     title: {
       type: String,
