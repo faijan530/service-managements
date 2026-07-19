@@ -4,10 +4,11 @@
   "description": "Backend for JASIQ Labs Internship Readiness Audit Service Request Management System",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only --watch src src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed": "ts-node src/scripts/seed.ts"
+    "seed": "ts-node src/scripts/seed.ts",
+    "test": "echo \"No backend tests configured yet\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -6,21 +7,25 @@ import authRoutes from './routes/authRoutes';
 import requestRoutes from './routes/requestRoutes';
 import aiRoutes from './routes/aiRoutes';
 
-dotenv.config();
+const envFiles = [path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), 'server/.env')];
+envFiles.forEach((file) => {
+  dotenv.config({ path: file });
+});
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || 5000);
 
 connectDB();
 
 const corsOptions = {
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000/',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
+  origin: (process.env.CLIENT_ORIGIN || 'http://localhost:3000').split(',').map((value) => value.trim()),
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -35,8 +40,8 @@ app.get('/api/health/ai', (req, res) => {
   res.status(200).json({ status: 'OK', provider: process.env.AI_PROVIDER || 'mock' });
 });
 
-app.use((req, res, next) => {
-  res.status(500).json({ error: 'Endpoint not found or server error' });
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found or server error' });
 });
 
 app.listen(PORT, () => {

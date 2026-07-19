@@ -49,10 +49,12 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role } = req.body;
 
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const newUser = new User({
       name,
       email,
-      passwordHash: password,
+      passwordHash,
       role: role || 'USER',
     });
 
